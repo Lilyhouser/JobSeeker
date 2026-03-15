@@ -1,0 +1,1355 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "JobSeeker API",
+    "description": "API Documentation for JobSeeker System",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3800",
+      "description": "Local server"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout",
+        "description": "Clears the JWT refresh token cookie and logs the user out.",
+        "responses": {
+          "204": {
+            "description": "Logged out successfully"
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login",
+        "description": "Authenticates a user with email and password. Returns an access token and sets a refresh token cookie.",
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": "user@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "secret123"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Register",
+        "description": "Creates a new user account and profile. Requirements differ by role.",
+        "responses": {
+          "201": {
+            "description": "User and profile registered successfully"
+          },
+          "400": {
+            "description": "Missing required fields for the given role"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "409": {
+            "description": "Email already exists"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password",
+                  "role"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": "newuser@example.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "secret123"
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "seeker",
+                      "recruiter"
+                    ],
+                    "example": "seeker"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Full name (for seeker)",
+                    "example": "John Doe"
+                  },
+                  "company_name": {
+                    "type": "string",
+                    "description": "Company name (for recruiter)",
+                    "example": "Acme Inc"
+                  },
+                  "location": {
+                    "type": "string",
+                    "description": "Location (for recruiter)",
+                    "example": "New York"
+                  },
+                  "tax_code": {
+                    "type": "string",
+                    "description": "Tax code (for recruiter)",
+                    "example": "TX123456"
+                  },
+                  "bussiness_license": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Business license file (for recruiter)"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Get list pedning recruiter",
+        "description": "Returns the list pedning recruiter.",
+        "responses": {
+          "200": {
+            "description": "List pedning recruiter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "uuid"
+                        },
+                        "email": {
+                          "type": "string",
+                          "example": "user@example.com"
+                        },
+                        "role": {
+                          "type": "string",
+                          "example": "seeker"
+                        },
+                        "status": {
+                          "type": "string",
+                          "example": "active"
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "example": "2024-01-01T00:00:00Z"
+                        },
+                        "profile": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/user/approve-recruiter/{id}": {
+      "put": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Approve recruiter",
+        "description": "Approves a recruiter by their ID. Admin role required.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recruiter approved successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden – seeker or admin cannot access"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/user/me": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Get current user profile",
+        "description": "Returns the logged-in user data along with their seeker or recruiter profile.",
+        "responses": {
+          "200": {
+            "description": "Current user with profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "uuid"
+                        },
+                        "email": {
+                          "type": "string",
+                          "example": "user@example.com"
+                        },
+                        "role": {
+                          "type": "string",
+                          "example": "seeker"
+                        },
+                        "status": {
+                          "type": "string",
+                          "example": "active"
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "example": "2024-01-01T00:00:00Z"
+                        },
+                        "profile": {
+                          "type": "object"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/user/password": {
+      "put": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Change password",
+        "description": "Requires the current password to set a new one.",
+        "responses": {
+          "200": {
+            "description": "Password updated successfully"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Old password is incorrect"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "oldPassword",
+                  "newPassword"
+                ],
+                "properties": {
+                  "oldPassword": {
+                    "type": "string",
+                    "example": "oldpass123"
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "example": "newpass456"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/seeker-profile": {
+      "put": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Update seeker profile",
+        "description": "Creates or updates the seeker profile (fullname, phone, address, skills). Seeker role required.",
+        "responses": {
+          "200": {
+            "description": "Seeker profile updated successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden – recruiter or admin cannot access"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fullname": {
+                    "type": "string",
+                    "example": "Nguyen Van A"
+                  },
+                  "phone": {
+                    "type": "string",
+                    "example": "0901234567"
+                  },
+                  "address": {
+                    "type": "string",
+                    "example": "Ha Noi, Vietnam"
+                  },
+                  "skills": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "JavaScript",
+                      "React",
+                      "Node.js"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/user/recruiter-profile": {
+      "put": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Update recruiter profile",
+        "description": "Creates or updates the recruiter profile (company info, tax code, etc.). Recruiter role required.",
+        "responses": {
+          "200": {
+            "description": "Recruiter profile updated successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden – seeker or admin cannot access"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "company_name": {
+                    "type": "string",
+                    "example": "Acme Corp"
+                  },
+                  "website": {
+                    "type": "string",
+                    "example": "https://acme.com"
+                  },
+                  "tax_code": {
+                    "type": "string",
+                    "example": "0123456789"
+                  },
+                  "exp_years": {
+                    "type": "integer",
+                    "example": 5
+                  },
+                  "location": {
+                    "type": "string",
+                    "example": "Ho Chi Minh City"
+                  },
+                  "bussiness_license": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Business license file"
+                  },
+                  "supplement_info": {
+                    "type": "string",
+                    "example": "Additional company details"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seeker/cv": {
+      "post": {
+        "tags": [
+          "User"
+        ],
+        "summary": "Upload CV (PDF)",
+        "description": "Uploads a PDF CV to Supabase Storage and appends its URL to the seeker profile cv_url array. Seeker role required.",
+        "responses": {
+          "200": {
+            "description": "CV uploaded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "CV uploaded successfully!"
+                    },
+                    "url": {
+                      "type": "string",
+                      "example": "https://xxx.supabase.co/storage/v1/object/public/cvs/uid/cv.pdf"
+                    },
+                    "cv_url": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "url": {
+                            "type": "string"
+                          },
+                          "uploaded_at": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No file uploaded or file is not a PDF"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden – recruiter role cannot upload CVs"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "cv"
+                ],
+                "properties": {
+                  "cv": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "PDF file to upload (max 10MB)"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/job/recruiter/my-jobs": {
+      "get": {
+        "tags": [
+          "Job"
+        ],
+        "summary": "List my jobs (Recruiter)",
+        "description": "Returns a list of jobs posted by the logged-in recruiter.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "recordPerPage",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/job/": {
+      "get": {
+        "tags": [
+          "Job"
+        ],
+        "summary": "Get jobs",
+        "description": "Get paginated job list with optional filters.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "recordPerPage",
+            "in": "query",
+            "description": "Records per page",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "Search keyword",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "description": "Job location",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "job_type",
+            "in": "query",
+            "description": "Job type (full_time | part_time | remote)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Job status (open | closed | expired)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Job"
+        ],
+        "summary": "Post a new job vacancy",
+        "description": "Creates a new job posting with optional category associations. Recruiter role required.",
+        "responses": {
+          "201": {
+            "description": "Job posted successfully"
+          },
+          "400": {
+            "description": "Missing required fields"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden – seeker role cannot post jobs"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "description",
+                  "job_type",
+                  "ended_at"
+                ],
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "example": "Senior Frontend Developer"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "We are looking for a skilled frontend developer..."
+                  },
+                  "location": {
+                    "type": "string",
+                    "example": "Ha Noi, Vietnam"
+                  },
+                  "position": {
+                    "type": "string",
+                    "example": "Frontend Developer"
+                  },
+                  "salary_min": {
+                    "type": "number",
+                    "example": 1500
+                  },
+                  "salary_max": {
+                    "type": "number",
+                    "example": 3000
+                  },
+                  "job_type": {
+                    "type": "string",
+                    "enum": [
+                      "full_time",
+                      "part_time",
+                      "remote"
+                    ],
+                    "example": "full_time"
+                  },
+                  "ended_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2025-06-30T00:00:00Z"
+                  },
+                  "requirement": {
+                    "type": "string",
+                    "example": "3+ years of React experience"
+                  },
+                  "benefit": {
+                    "type": "string",
+                    "example": "Health insurance, 13th month salary"
+                  },
+                  "recruite_quantity": {
+                    "type": "integer",
+                    "example": 3
+                  },
+                  "exp_year": {
+                    "type": "integer",
+                    "example": 2
+                  },
+                  "category_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "uuid-cat-1",
+                      "uuid-cat-2"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/job/{id}": {
+      "get": {
+        "tags": [
+          "Job"
+        ],
+        "summary": "Get job detail",
+        "description": "Returns a single job with its categories and recruiter company info.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Job UUID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job detail with categories"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/job/{id}/applicants": {
+      "get": {
+        "tags": [
+          "Job"
+        ],
+        "summary": "Get applicants for a job",
+        "description": "Returns all applicants who applied for this job. Only accessible by the recruiter who owns the job.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Job UUID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of applicants with seeker profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "job_title": {
+                      "type": "string"
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "cover_letter": {
+                            "type": "string"
+                          },
+                          "custom_cv_url": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "applied_at": {
+                            "type": "string"
+                          },
+                          "seekerprofile": {
+                            "type": "object"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden – not the owner of this job"
+          },
+          "404": {
+            "description": "Job not found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/application/me": {
+      "get": {
+        "tags": [
+          "Apply"
+        ],
+        "summary": "Get my applications",
+        "description": "Get my job applications",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Page number",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "recordPerPage",
+            "in": "query",
+            "description": "Items per page",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Application status",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/application/{id}/status": {
+      "put": {
+        "tags": [
+          "Apply"
+        ],
+        "summary": "Update application status (Recruiter)",
+        "description": "Recruiter updates the status of an application for one of their jobs.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Application ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "example": "considering"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/application/": {
+      "post": {
+        "tags": [
+          "Apply"
+        ],
+        "summary": "Apply for a job",
+        "description": "Submits a job application for the logged-in seeker. Prevents duplicate applications and rejects inactive jobs.",
+        "responses": {
+          "201": {
+            "description": "Application submitted successfully"
+          },
+          "400": {
+            "description": "job_id missing or job is no longer active"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden – recruiter role cannot apply for jobs"
+          },
+          "404": {
+            "description": "Job not found"
+          },
+          "409": {
+            "description": "Already applied for this job"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "job_id"
+                ],
+                "properties": {
+                  "job_id": {
+                    "type": "string",
+                    "example": "uuid-of-job"
+                  },
+                  "custom_cv_url": {
+                    "type": "string",
+                    "description": "Optional URL to a specific CV to use for this application",
+                    "example": "https://storage.example.com/cvs/my-cv.pdf"
+                  },
+                  "cover_letter": {
+                    "type": "string",
+                    "description": "Optional cover letter text",
+                    "example": "I am very interested in this position because..."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/category/": {
+      "get": {
+        "tags": [
+          "Category"
+        ],
+        "summary": "Get all job categories",
+        "description": "Returns a list of all job categories.",
+        "responses": {
+          "200": {
+            "description": "List of job categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "example": "uuid"
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "IT"
+                          },
+                          "description": {
+                            "type": "string",
+                            "example": "Information Technology"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
+                }
+              },
+              "application/xml": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "example": "uuid"
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "IT"
+                          },
+                          "description": {
+                            "type": "string",
+                            "example": "Information Technology"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "xml": {
+                    "name": "main"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Category"
+        ],
+        "summary": "Create a new job category",
+        "description": "Allows admin to create a new job category.",
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "IT"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Information Technology"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/category/{id}": {
+      "put": {
+        "tags": [
+          "Category"
+        ],
+        "summary": "Update a job category",
+        "description": "Allows admin to update an existing job category.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Category ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "example": "Software Development"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Software dev"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Category"
+        ],
+        "summary": "Delete a job category",
+        "description": "Allows admin to delete a job category.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Category ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
