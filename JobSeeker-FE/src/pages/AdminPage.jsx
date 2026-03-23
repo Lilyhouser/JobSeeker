@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { userAPI } from '../services/api';
-import { FiCheck, FiX, FiEye, FiExternalLink } from 'react-icons/fi';
+import { useState, useEffect } from "react";
+import { userAPI } from "../services/api";
+import { FiCheck, FiX, FiEye, FiExternalLink } from "react-icons/fi";
 
 export default function AdminPage() {
   const [recruiters, setRecruiters] = useState([]);
@@ -33,14 +33,16 @@ export default function AdminPage() {
     }
   };
 
-  const formatDate = (d) => d ? new Date(d).toLocaleDateString('vi-VN') : '';
+  const formatDate = (d) => (d ? new Date(d).toLocaleDateString("vi-VN") : "");
 
   return (
     <div className="page-container">
       <h1>Quản lý tuyển dụng</h1>
 
       {loading ? (
-        <div className="loading-state"><div className="spinner"></div></div>
+        <div className="loading-state">
+          <div className="spinner"></div>
+        </div>
       ) : (
         <div className="data-table-wrapper">
           <table className="data-table">
@@ -57,16 +59,24 @@ export default function AdminPage() {
             </thead>
             <tbody>
               {recruiters.length === 0 ? (
-                <tr><td colSpan={7} className="text-center">Không có recruiter nào chờ duyệt</td></tr>
+                <tr>
+                  <td colSpan={7} className="text-center">
+                    Không có recruiter nào chờ duyệt
+                  </td>
+                </tr>
               ) : (
                 recruiters.map((rec, idx) => (
                   <tr key={rec.id}>
                     <td>{idx + 1}</td>
-                    <td className="td-title">{rec.profile?.company_name || 'N/A'}</td>
+                    <td className="td-title">
+                      {rec.profile?.company_name || "N/A"}
+                    </td>
                     <td>{rec.email}</td>
-                    <td>{rec.profile?.location || '-'}</td>
+                    <td>{rec.profile?.location || "-"}</td>
                     <td>
-                      <span className="status-badge badge-warning">{rec.status}</span>
+                      <span className="status-badge badge-warning">
+                        {rec.status}
+                      </span>
                     </td>
                     <td>{formatDate(rec.created_at)}</td>
                     <td>
@@ -95,21 +105,29 @@ export default function AdminPage() {
 
       {/* Detail Modal */}
       {selectedRecruiter && (
-        <div className="modal-overlay" onClick={() => setSelectedRecruiter(null)}>
+        <div
+          className="modal-overlay"
+          onClick={() => setSelectedRecruiter(null)}
+        >
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Chi tiết nhà tuyển dụng</h2>
-              <button className="modal-close" onClick={() => setSelectedRecruiter(null)}><FiX /></button>
+              <button
+                className="modal-close"
+                onClick={() => setSelectedRecruiter(null)}
+              >
+                <FiX />
+              </button>
             </div>
             <div className="modal-body">
               <div className="detail-grid">
                 <div className="detail-item">
                   <label>Công ty</label>
-                  <p>{selectedRecruiter.profile?.company_name || 'N/A'}</p>
+                  <p>{selectedRecruiter.profile?.company_name || "N/A"}</p>
                 </div>
                 <div className="detail-item">
                   <label>Đại chỉ</label>
-                  <p>{selectedRecruiter.profile?.location || 'N/A'}</p>
+                  <p>{selectedRecruiter.profile?.location || "N/A"}</p>
                 </div>
                 <div className="detail-item">
                   <label>Email</label>
@@ -117,7 +135,7 @@ export default function AdminPage() {
                 </div>
                 <div className="detail-item">
                   <label>Mã số thuế</label>
-                  <p>{selectedRecruiter.profile?.tax_code || 'N/A'}</p>
+                  <p>{selectedRecruiter.profile?.tax_code || "N/A"}</p>
                 </div>
                 <div className="detail-item full-width">
                   <label>Giấy phép kinh doanh</label>
@@ -137,8 +155,17 @@ export default function AdminPage() {
               </div>
 
               <div className="modal-actions">
-                <button className="btn btn-outline" onClick={() => setSelectedRecruiter(null)}>
-                  Tự chối
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setSelectedRecruiter(null)}
+                >
+                  Từ chối
+                </button>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => alert("Thêm thông tin sẽ làm sau")}
+                >
+                  Thêm thông in
                 </button>
                 <button
                   className="btn btn-primary"
