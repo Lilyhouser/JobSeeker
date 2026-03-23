@@ -33,6 +33,7 @@ const postJob = async (req, res) => {
       benefit,
       recruite_quantity,
       exp_year,
+      status = JobStatus.OPEN,
       category_ids = [],
     } = req.body;
 
@@ -47,6 +48,13 @@ const postJob = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: `Invalid job_type. Allowed values: ${Object.values(JobType).join(", ")}`,
+      });
+    }
+
+    if (status && !Object.values(JobStatus).includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Allowed values: ${Object.values(JobStatus).join(", ")}`,
       });
     }
 
@@ -66,6 +74,7 @@ const postJob = async (req, res) => {
         benefit,
         recruite_quantity,
         exp_year,
+        status,
       })
       .select()
       .single();
@@ -88,6 +97,110 @@ const postJob = async (req, res) => {
       success: true,
       message: "Job posted successfully!",
       data: job,
+    });
+  } catch (error) {
+    serverErrorMessageRes(res, error);
+  }
+};
+
+// PUT /job/:id — recruiter updates an existing job vacancy
+const updateJob = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      title,
+      description,
+      location,
+      position,
+      salary_min,
+      salary_max,
+      job_type,
+      ended_at,
+      requirement,
+      benefit,
+      recruite_quantity,
+      exp_year,
+      status,
+      category_ids,
+    } = req.body;
+
+    // Verify job existence and ownership
+    const { data: existingJob, error: fetchError } = await supabase
+      .from("job")
+      .select("id, recruiter_id")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (fetchError) return serverErrorMessageRes(res, fetchError);
+    if (!existingJob) {
+      return res.status(404).json({ success: false, message: "Job not found!" });
+    }
+
+    if (existingJob.recruiter_id !== req.userId) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not allowed to update this job!",
+      });
+    }
+
+    // Prepare update object
+    const updateData = {};
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (location !== undefined) updateData.location = location;
+    if (position !== undefined) updateData.position = position;
+    if (salary_min !== undefined) updateData.salary_min = salary_min;
+    if (salary_max !== undefined) updateData.salary_max = salary_max;
+    if (job_type !== undefined) {
+      if (!Object.values(JobType).includes(job_type)) {
+        return res.status(400).json({ success: false, message: "Invalid job_type" });
+      }
+      updateData.job_type = job_type;
+    }
+    if (ended_at !== undefined) updateData.ended_at = ended_at;
+    if (requirement !== undefined) updateData.requirement = requirement;
+    if (benefit !== undefined) updateData.benefit = benefit;
+    if (recruite_quantity !== undefined)
+      updateData.recruite_quantity = recruite_quantity;
+    if (exp_year !== undefined) updateData.exp_year = exp_year;
+    if (status !== undefined) {
+      if (!Object.values(JobStatus).includes(status)) {
+        return res.status(400).json({ success: false, message: "Invalid status" });
+      }
+      updateData.status = status;
+    }
+
+    const { data: updatedJob, error: updateError } = await supabase
+      .from("job")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (updateError) return serverErrorMessageRes(res, updateError);
+
+    // Update categories if provided
+    if (category_ids !== undefined) {
+      // Delete old categories
+      await supabase.from("jobhascategory").delete().eq("job_id", id);
+
+      // Insert new categories
+      if (category_ids.length > 0) {
+        const categoryRows = category_ids.map((category_id) => ({
+          job_id: id,
+          category_id,
+        }));
+        const { error: catError } = await supabase
+          .from("jobhascategory")
+          .insert(categoryRows);
+        if (catError) return serverErrorMessageRes(res, catError);
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Job updated successfully!",
+      data: updatedJob,
     });
   } catch (error) {
     serverErrorMessageRes(res, error);
@@ -279,6 +392,7 @@ const getRecruiterJobs = async (req, res) => {
 
 module.exports = {
   postJob,
+  updateJob,
   getJobs,
   getJobById,
   getApplicants,

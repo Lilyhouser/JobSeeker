@@ -1,8 +1,13 @@
 import { useState, useEffect } from "react";
 import { jobAPI, applicationAPI } from "../services/api";
-import { FiUsers, FiFileText, FiX, FiCheck, FiClock } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
+import {
+  FiUsers, FiFileText, FiX, FiCheck, FiClock,
+  FiPlusCircle, FiEdit2, FiTrash2, FiGlobe,
+} from "react-icons/fi";
 
 export default function RecruitmentPage() {
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState(null);
@@ -10,6 +15,7 @@ export default function RecruitmentPage() {
   const [loadingApplicants, setLoadingApplicants] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [actionLoading, setActionLoading] = useState(null); // jobId currently being actioned
 
   const fetchJobs = async (page = 1) => {
     setLoading(true);
@@ -45,7 +51,6 @@ export default function RecruitmentPage() {
   const handleUpdateStatus = async (appId, status) => {
     try {
       await applicationAPI.updateStatus(appId, status);
-      // Refresh applicants
       if (selectedJob) {
         const res = await jobAPI.getApplicants(selectedJob.id);
         setApplicants(res.data.data || []);
@@ -55,13 +60,21 @@ export default function RecruitmentPage() {
     }
   };
 
+  const handleJobAction = async (jobId, status) => {
+    setActionLoading(jobId + status);
+    try {
+      await jobAPI.updateJob(jobId, { status });
+      await fetchJobs(currentPage);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const formatDate = (d) => (d ? new Date(d).toLocaleDateString("vi-VN") : "");
   const formatJobType = (type) => {
-    const map = {
-      full_time: "Toàn thời gian",
-      part_time: "Bán thời gian",
-      remote: "Từ xa",
-    };
+    const map = { full_time: "Toàn thời gian", part_time: "Bán thời gian", remote: "Từ xa" };
     return map[type] || type;
   };
 
@@ -70,6 +83,7 @@ export default function RecruitmentPage() {
       open: { label: "Đang mở", cls: "badge-success" },
       closed: { label: "Đã đóng", cls: "badge-danger" },
       expired: { label: "Hết hạn", cls: "badge-warning" },
+      draft: { label: "Nháp", cls: "badge-muted" },
     };
     const s = map[status] || { label: status, cls: "" };
     return <span className={`status-badge ${s.cls}`}>{s.label}</span>;
@@ -88,7 +102,15 @@ export default function RecruitmentPage() {
 
   return (
     <div className="page-container">
-      <h1>Quản lý tuyển dụng</h1>
+      <div className="page-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+        <h1 style={{ margin: 0 }}>Quản lý tuyển dụng</h1>
+        <button
+          className="btn btn-primary"
+          onClick={() => navigate("/recruiter/post-job")}
+        >
+          <FiPlusCircle /> Thêm công việc
+        </button>
+      </div>
 
       {loading ? (
         <div className="loading-state">
@@ -106,14 +128,18 @@ export default function RecruitmentPage() {
                 <th>Trạng thái</th>
                 <th>Ngày đăng</th>
                 <th>Hạn nộp</th>
+                <th>Ứng viên</th>
                 <th>Hành động</th>
               </tr>
             </thead>
             <tbody>
               {jobs.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center">
-                    Chưa có công việc nào
+                  <td colSpan={9} className="text-center">
+                    Chưa có công việc nào.{" "}
+                    <button className="link-button" onClick={() => navigate("/recruiter/post-job")}>
+                      Thêm ngay
+                    </button>
                   </td>
                 </tr>
               ) : (
@@ -134,6 +160,46 @@ export default function RecruitmentPage() {
                         <FiUsers /> Ứng viên
                       </button>
                     </td>
+                    <td>
+                      <div className="action-btns">
+                        {/* Public button – only for draft */}
+                        {job.status === "draft" && (
+                          <button
+                            className="btn btn-sm btn-success-outline"
+                            title="Công khai"
+                            disabled={actionLoading === job.id + "open"}
+                            onClick={() => handleJobAction(job.id, "open")}
+                          >
+                            <FiGlobe />
+                          </button>
+                        )}
+
+                        {/* Edit button */}
+                        <button
+                          className="btn btn-sm btn-outline"
+                          title="Chỉnh sửa"
+                          onClick={() => navigate(`/recruiter/post-job?id=${job.id}`)}
+                        >
+                          <FiEdit2 />
+                        </button>
+
+                        {/* Delete (Close) button – not if already closed */}
+                        {job.status !== "closed" && (
+                          <button
+                            className="btn btn-sm btn-danger-outline"
+                            title="Đóng công việc"
+                            disabled={actionLoading === job.id + "closed"}
+                            onClick={() => {
+                              if (window.confirm("Đóng công việc này?")) {
+                                handleJobAction(job.id, "closed");
+                              }
+                            }}
+                          >
+                            <FiTrash2 />
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -149,9 +215,7 @@ export default function RecruitmentPage() {
               >
                 Trước
               </button>
-              <span className="page-info">
-                Trang {currentPage}/{totalPages}
-              </span>
+              <span className="page-info">Trang {currentPage}/{totalPages}</span>
               <button
                 className="btn btn-outline btn-sm"
                 disabled={currentPage >= totalPages}
@@ -170,18 +234,13 @@ export default function RecruitmentPage() {
           <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Ứng viên - {selectedJob.title}</h2>
-              <button
-                className="modal-close"
-                onClick={() => setSelectedJob(null)}
-              >
+              <button className="modal-close" onClick={() => setSelectedJob(null)}>
                 <FiX />
               </button>
             </div>
             <div className="modal-body">
               {loadingApplicants ? (
-                <div className="loading-state">
-                  <div className="spinner"></div>
-                </div>
+                <div className="loading-state"><div className="spinner"></div></div>
               ) : applicants.length === 0 ? (
                 <p className="text-center text-muted">Chưa có ứng viên nào.</p>
               ) : (
@@ -213,39 +272,30 @@ export default function RecruitmentPage() {
                             >
                               <FiFileText /> Xem CV
                             </a>
-                          ) : (
-                            "-"
-                          )}
+                          ) : "-"}
                         </td>
                         <td>{getAppStatusBadge(app.status)}</td>
                         <td>{formatDate(app.applied_at)}</td>
                         <td>
-                          {app.status !== "passed" &&
-                          app.status !== "rejected" ? (
+                          {app.status !== "passed" && app.status !== "rejected" ? (
                             <div className="action-btns">
                               <button
                                 className="btn btn-sm btn-success-outline"
-                                onClick={() =>
-                                  handleUpdateStatus(app.id, "considering")
-                                }
+                                onClick={() => handleUpdateStatus(app.id, "considering")}
                                 title="Xem xét"
                               >
                                 <FiClock />
                               </button>
                               <button
                                 className="btn btn-sm btn-success-outline"
-                                onClick={() =>
-                                  handleUpdateStatus(app.id, "passed")
-                                }
+                                onClick={() => handleUpdateStatus(app.id, "passed")}
                                 title="Duyệt"
                               >
                                 <FiCheck />
                               </button>
                               <button
                                 className="btn btn-sm btn-danger-outline"
-                                onClick={() =>
-                                  handleUpdateStatus(app.id, "rejected")
-                                }
+                                onClick={() => handleUpdateStatus(app.id, "rejected")}
                                 title="Từ chối"
                               >
                                 <FiX />

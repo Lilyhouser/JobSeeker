@@ -56,6 +56,7 @@ export const jobAPI = {
   getJobs: (params) => api.get('/job/', { params }),
   getJobById: (id) => api.get(`/job/${id}`),
   postJob: (data) => api.post('/job/', data),
+  updateJob: (id, data) => api.put(`/job/${id}`, data),
   getMyJobs: (params) => api.get('/job/recruiter/my-jobs', { params }),
   getApplicants: (jobId) => api.get(`/job/${jobId}/applicants`),
 };

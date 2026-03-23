@@ -1,30 +1,29 @@
 import { useState, useEffect } from 'react';
 import { jobAPI, categoryAPI } from '../services/api';
-import { useNavigate } from 'react-router-dom';
-import { FiSend } from 'react-icons/fi';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { FiSend, FiSave } from 'react-icons/fi';
 
 export default function PostJobPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('id'); // present when editing
+  const isEditMode = Boolean(editId);
+
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(isEditMode);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [categories, setCategories] = useState([]);
 
-  const [form, setForm] = useState({
-    title: '',
-    description: '',
-    location: '',
-    position: '',
-    salary_min: '',
-    salary_max: '',
-    job_type: 'full_time',
-    ended_at: '',
-    requirement: '',
-    benefit: '',
-    recruite_quantity: '',
-    exp_year: '',
-    category_ids: [],
-  });
+  const emptyForm = {
+    title: '', description: '', location: '', position: '',
+    salary_min: '', salary_max: '', job_type: 'full_time',
+    ended_at: '', requirement: '', benefit: '',
+    recruite_quantity: '', exp_year: '', category_ids: [],
+  };
 
+  const [form, setForm] = useState(emptyForm);
+
+  // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -36,6 +35,38 @@ export default function PostJobPage() {
     };
     fetchCategories();
   }, []);
+
+  // Fetch job data when editing
+  useEffect(() => {
+    if (!isEditMode) return;
+    const fetchJob = async () => {
+      setPageLoading(true);
+      try {
+        const res = await jobAPI.getJobById(editId);
+        const job = res.data.data;
+        setForm({
+          title: job.title || '',
+          description: job.description || '',
+          location: job.location || '',
+          position: job.position || '',
+          salary_min: job.salary_min ?? '',
+          salary_max: job.salary_max ?? '',
+          job_type: job.job_type || 'full_time',
+          ended_at: job.ended_at ? job.ended_at.split('T')[0] : '',
+          requirement: job.requirement || '',
+          benefit: job.benefit || '',
+          recruite_quantity: job.recruite_quantity ?? '',
+          exp_year: job.exp_year ?? '',
+          category_ids: (job.categories || []).map((c) => c.id),
+        });
+      } catch (err) {
+        setMessage({ type: 'error', text: 'Không thể tải thông tin công việc!' });
+      } finally {
+        setPageLoading(false);
+      }
+    };
+    fetchJob();
+  }, [editId, isEditMode]);
 
   const handleChange = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -53,38 +84,62 @@ export default function PostJobPage() {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const buildPayload = (status) => ({
+    ...form,
+    salary_min: form.salary_min ? Number(form.salary_min) : undefined,
+    salary_max: form.salary_max ? Number(form.salary_max) : undefined,
+    recruite_quantity: form.recruite_quantity ? Number(form.recruite_quantity) : undefined,
+    exp_year: form.exp_year ? Number(form.exp_year) : undefined,
+    status,
+  });
+
+  const handleSubmit = async (e, status = 'open') => {
+    if (e) e.preventDefault();
     setMessage({ type: '', text: '' });
     setLoading(true);
     try {
-      const payload = {
-        ...form,
-        salary_min: form.salary_min ? Number(form.salary_min) : undefined,
-        salary_max: form.salary_max ? Number(form.salary_max) : undefined,
-        recruite_quantity: form.recruite_quantity ? Number(form.recruite_quantity) : undefined,
-        exp_year: form.exp_year ? Number(form.exp_year) : undefined,
-      };
-      await jobAPI.postJob(payload);
-      setMessage({ type: 'success', text: 'Đăng công việc thành công!' });
-      setTimeout(() => navigate('/recruiter/my-jobs'), 1500);
+      const payload = buildPayload(status);
+      if (isEditMode) {
+        await jobAPI.updateJob(editId, payload);
+        setMessage({ type: 'success', text: 'Cập nhật công việc thành công!' });
+      } else {
+        await jobAPI.postJob(payload);
+        setMessage({
+          type: 'success',
+          text: status === 'draft' ? 'Lưu nháp thành công!' : 'Đăng công việc thành công!',
+        });
+      }
+      setTimeout(() => navigate('/recruiter/my-jobs'), 1400);
     } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Lỗi đăng tin!' });
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Có lỗi xảy ra!' });
     } finally {
       setLoading(false);
     }
   };
 
+  if (pageLoading) {
+    return (
+      <div className="page-container">
+        <div className="loading-state"><div className="spinner"></div></div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-container">
       <div className="form-page">
-        <h1>Đăng công việc</h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+          <h1>{isEditMode ? 'Chỉnh sửa công việc' : 'Đăng công việc'}</h1>
+          <button type="button" className="btn btn-outline" onClick={() => navigate('/recruiter/my-jobs')}>
+            ← Quay lại
+          </button>
+        </div>
 
         {message.text && (
           <div className={`alert alert-${message.type}`}>{message.text}</div>
         )}
 
-        <form onSubmit={handleSubmit} className="post-job-form">
+        <form onSubmit={(e) => handleSubmit(e, 'open')} className="post-job-form">
           <div className="form-section">
             <h3>Thông tin cơ bản</h3>
             <div className="form-row">
@@ -263,11 +318,22 @@ export default function PostJobPage() {
           )}
 
           <div className="form-actions">
-            <button type="button" className="btn btn-outline" onClick={() => navigate(-1)}>
+            <button type="button" className="btn btn-outline" onClick={() => navigate('/recruiter/my-jobs')}>
               Hủy
             </button>
+            {/* Save as Draft — only show when creating */}
+            {!isEditMode && (
+              <button
+                type="button"
+                className="btn btn-outline"
+                disabled={loading}
+                onClick={() => handleSubmit(null, 'draft')}
+              >
+                <FiSave /> {loading ? 'Đang lưu...' : 'Lưu nháp'}
+              </button>
+            )}
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              <FiSend /> {loading ? 'Đang đăng...' : 'Đăng công việc'}
+              <FiSend /> {loading ? 'Đang xử lý...' : isEditMode ? 'Cập nhật' : 'Đăng công việc'}
             </button>
           </div>
         </form>

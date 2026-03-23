@@ -35,7 +35,6 @@ export default function Navbar() {
       case 'recruiter':
         return [
           { to: '/recruiter/my-jobs', label: 'Quản lý tuyển dụng' },
-          { to: '/recruiter/post-job', label: 'Đăng công việc' },
         ];
       case 'admin':
         return [

@@ -1,6 +1,7 @@
 const express = require("express");
 const {
   postJob,
+  updateJob,
   getJobs,
   getJobById,
   getApplicants,
@@ -110,6 +111,19 @@ router.post(
   /* #swagger.responses[403] = { description: "Forbidden – seeker role cannot post jobs" } */
   verifyRoles(ROLE.RECRUITER),
   postJob,
+);
+
+router.put(
+  "/:id",
+  // #swagger.tags = ['Job']
+  // #swagger.summary = 'Update job vacancy (Recruiter)'
+  // #swagger.security = [{ "bearerAuth": [] }]
+  /* #swagger.parameters['id'] = { in: 'path', required: true, description: 'Job UUID' } */
+  /* #swagger.responses[200] = { description: "Job updated successfully" } */
+  /* #swagger.responses[403] = { description: "Forbidden – not the owner" } */
+  /* #swagger.responses[404] = { description: "Job not found" } */
+  verifyRoles(ROLE.RECRUITER),
+  updateJob,
 );
 
 router.get(
