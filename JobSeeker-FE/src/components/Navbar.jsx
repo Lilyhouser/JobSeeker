@@ -92,7 +92,7 @@ export default function Navbar() {
               {dropdownOpen && (
                 <div className="dropdown-menu">
                   <Link
-                    to="/profile"
+                    to={user.role === 'recruiter' ? '/recruiter/profile' : '/profile'}
                     className="dropdown-item"
                     onClick={() => setDropdownOpen(false)}
                   >

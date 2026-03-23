@@ -201,9 +201,7 @@ export default function RecruitmentPage() {
                     {applicants.map((app, idx) => (
                       <tr key={app.id}>
                         <td>{idx + 1}</td>
-                        <td>
-                          {app.seeker?.seekerprofile?.[0]?.fullname || "N/A"}
-                        </td>
+                        <td>{app.seeker?.seekerprofile?.fullname || "N/A"}</td>
                         <td>{app.seeker?.email || "N/A"}</td>
                         <td>
                           {app.custom_cv_url ? (

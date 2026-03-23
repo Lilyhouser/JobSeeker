@@ -62,7 +62,12 @@ export const jobAPI = {
 
 // ─── Application ───────────────────────────────────────
 export const applicationAPI = {
-  apply: (data) => api.post('/application/', data),
+  apply: (data) => {
+    const isFormData = data instanceof FormData;
+    return api.post('/application/', data, {
+      headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
+    });
+  },
   getMyApplications: (params) => api.get('/application/me', { params }),
   updateStatus: (id, status) => api.put(`/application/${id}/status`, { status }),
 };

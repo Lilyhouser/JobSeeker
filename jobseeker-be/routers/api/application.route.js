@@ -1,4 +1,5 @@
 const express = require("express");
+const multer = require("multer");
 const {
   applyForJob,
   getMyApplications,
@@ -8,6 +9,18 @@ const verifyRoles = require("../../middlewares/roleMiddleware");
 const ROLE = require("../../constraints/role");
 
 const router = express.Router();
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === "application/pdf") {
+      cb(null, true);
+    } else {
+      cb(new Error("Only PDF files are allowed!"), false);
+    }
+  },
+});
 
 router.get(
   "/me",
@@ -107,6 +120,7 @@ router.post(
   /* #swagger.responses[404] = { description: "Job not found" } */
   /* #swagger.responses[409] = { description: "Already applied for this job" } */
   verifyRoles(ROLE.SEEKER),
+  upload.single("cv"),
   applyForJob,
 );
 

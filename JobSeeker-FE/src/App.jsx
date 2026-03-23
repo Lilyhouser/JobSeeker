@@ -10,6 +10,7 @@ import SeekerProfilePage from './pages/SeekerProfilePage';
 import MyApplicationsPage from './pages/MyApplicationsPage';
 import PostJobPage from './pages/PostJobPage';
 import RecruitmentPage from './pages/RecruitmentPage';
+import RecruiterProfilePage from './pages/RecruiterProfilePage';
 import AdminPage from './pages/AdminPage';
 import './App.css';
 
@@ -66,6 +67,11 @@ function AppLayout() {
         <Route path="/recruiter/post-job" element={
           <ProtectedRoute roles={['recruiter']}>
             <PostJobPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/recruiter/profile" element={
+          <ProtectedRoute roles={['recruiter']}>
+            <RecruiterProfilePage />
           </ProtectedRoute>
         } />
 

@@ -6,12 +6,34 @@ const { serverErrorMessageRes } = require("../helpers/serverErrorMessage");
 // POST /application — seeker applies for a job
 const applyForJob = async (req, res) => {
   try {
-    const { job_id, custom_cv_url, cover_letter } = req.body;
+    const { job_id, custom_cv_url: body_cv_url, cover_letter } = req.body;
+    let final_cv_url = body_cv_url;
 
     if (!job_id) {
       return res
         .status(400)
         .json({ success: false, message: "job_id is required!" });
+    }
+
+    // Handle file upload if present
+    if (req.file) {
+      const { originalname, buffer, mimetype } = req.file;
+      const timestamp = Date.now();
+      const filePath = `applications/${req.userId}/${timestamp}_${originalname}`;
+
+      // Upload to Supabase Storage bucket "cvs"
+      const { error: uploadError } = await supabase.storage
+        .from("cvs")
+        .upload(filePath, buffer, { contentType: mimetype, upsert: false });
+
+      if (uploadError) return serverErrorMessageRes(res, uploadError);
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("cvs")
+        .getPublicUrl(filePath);
+
+      final_cv_url = urlData.publicUrl;
     }
 
     // Check if job exists
@@ -56,7 +78,7 @@ const applyForJob = async (req, res) => {
       .insert({
         job_id,
         seeker_id: req.userId,
-        custom_cv_url: custom_cv_url ?? null,
+        custom_cv_url: final_cv_url ?? null,
         cover_letter: cover_letter ?? null,
         status: ApplicationStatus.APPLIED,
       })

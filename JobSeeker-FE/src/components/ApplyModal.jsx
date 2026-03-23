@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { applicationAPI } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { FiX, FiFileText } from 'react-icons/fi';
+import { FiX, FiUpload } from 'react-icons/fi';
 
 export default function ApplyModal({ job, onClose }) {
   const { user } = useAuth();
   const [coverLetter, setCoverLetter] = useState('');
+  const [cvSource, setCvSource] = useState('existing'); // 'existing' or 'upload'
   const [selectedCV, setSelectedCV] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -16,13 +18,29 @@ export default function ApplyModal({ job, onClose }) {
   const handleApply = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (cvSource === 'existing' && !selectedCV) {
+      setError('Vui lòng chọn một CV!');
+      return;
+    }
+    if (cvSource === 'upload' && !selectedFile) {
+      setError('Vui lòng chọn file CV để tải lên!');
+      return;
+    }
+
     setLoading(true);
     try {
-      await applicationAPI.apply({
-        job_id: job.id,
-        custom_cv_url: selectedCV || undefined,
-        cover_letter: coverLetter || undefined,
-      });
+      const formData = new FormData();
+      formData.append('job_id', job.id);
+      if (coverLetter) formData.append('cover_letter', coverLetter);
+
+      if (cvSource === 'existing') {
+        formData.append('custom_cv_url', selectedCV);
+      } else {
+        formData.append('cv', selectedFile);
+      }
+
+      await applicationAPI.apply(formData);
       setSuccess(true);
       setTimeout(() => onClose(), 1500);
     } catch (err) {
@@ -48,7 +66,33 @@ export default function ApplyModal({ job, onClose }) {
           <form onSubmit={handleApply} className="modal-body">
             {error && <div className="alert alert-error">{error}</div>}
 
-            {cvList.length > 0 && (
+            <div className="form-group">
+              <label>Phương thức nộp CV</label>
+              <div className="flex gap-4 mb-2">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="cvSource"
+                    value="existing"
+                    checked={cvSource === 'existing'}
+                    onChange={() => setCvSource('existing')}
+                  />
+                  <span>Dùng CV đã có</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="cvSource"
+                    value="upload"
+                    checked={cvSource === 'upload'}
+                    onChange={() => setCvSource('upload')}
+                  />
+                  <span>Tải lên CV mới</span>
+                </label>
+              </div>
+            </div>
+
+            {cvSource === 'existing' ? (
               <div className="form-group">
                 <label>Chọn CV đã tải lên</label>
                 <select
@@ -60,10 +104,25 @@ export default function ApplyModal({ job, onClose }) {
                   <option value="">-- Chọn CV --</option>
                   {cvList.map((cv, idx) => (
                     <option key={idx} value={cv.url}>
-                      <FiFileText /> {cv.name || `CV ${idx + 1}`}
+                      {cv.name || `CV ${idx + 1}`}
                     </option>
                   ))}
                 </select>
+              </div>
+            ) : (
+              <div className="form-group">
+                <label>Tải lên CV mới (PDF)</label>
+                <div className="file-upload-container">
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => setSelectedFile(e.target.files[0])}
+                    className="form-input"
+                  />
+                  <p className="text-sm text-gray-500 mt-1">
+                    <FiUpload className="inline mr-1" /> Chấp nhận file PDF tối đa 10MB
+                  </p>
+                </div>
               </div>
             )}
 
